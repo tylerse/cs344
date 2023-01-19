@@ -2,7 +2,7 @@
  * Date: 01/19/2023
  * Class: CS344
  * Assignment: BASE64
- * 
+ *
  * base64enc: Encodes a file in base64, or provided no arguments or '-'
  *            encodes from stdin
  *
@@ -32,14 +32,14 @@ static char const alphabet[] =  "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
  * Function:    encode
  * -------------------
  * base64 encodes in[3] array into out[4] array
- * 
+ *
  * example, with letters standing in for bits
  * input bytes = abcdefgh ijklmnop qrstuvwx
- * first byte -> -01abcdef
- * second     -> -01ghijkl
- * third      -> -01mnopqr
- * fourth     -> -01stuvwx
- * 
+ * first byte -> 00abcdef
+ * second     -> 00ghijkl
+ * third      -> 00mnopqr
+ * fourth     -> 00stuvwx
+ *
  * in[3]: three byte array to encode
  * out[4]: four byte array to place encoded data
  *
@@ -59,7 +59,7 @@ int encode(uint8_t in[], uint8_t out[]){
   out[3] = in[2] & 0x3f;
   return 0;
 }
-                                
+
 int main(int argc, char *argv[]){
 
   int len;
@@ -133,7 +133,7 @@ int main(int argc, char *argv[]){
         printf("\n");
         line_feed = 0;
       }
-    }    
+    }
   }
 
   // add a line feed to end of output if one was not already added
