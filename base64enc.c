@@ -26,7 +26,7 @@
 
 static char const alphabet[] =  "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
                                 "abcdefghijklmnopqrstuvwxyz"
-                                "01234567890+/=";
+                                "0123456789+/=";
 
 /*
  * Function:    encode
@@ -118,7 +118,7 @@ int main(int argc, char *argv[]){
       if(len < 3){
         int padding = ceil(4.0 * len / 3.0);
         for(int i = padding; i < OUT_SIZE; i++){
-          out[i] = 65;
+          out[i] = 64;
         }
       }
     }
