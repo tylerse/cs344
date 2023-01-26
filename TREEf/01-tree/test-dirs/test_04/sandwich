@@ -1,0 +1,1 @@
+shuf -n23 ../wordlist

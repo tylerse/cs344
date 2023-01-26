@@ -1,0 +1,11 @@
+Num  DEPTH    Directories?  Special?     Hidden?   Directory Permissions?  Files
+01   (empty)  no            no           no        n/a                     0
+02   1        no            no           no        n/a                     130
+03   1        yes           no           no        +rx                     140
+04   2        yes           no           no        +rx                     265
+05   15       yes           no           no        +rx                     1222
+06   4        yes           no           no        random (access denied)  166
+07   1        no            no           yes       n/a                     140
+08   14       yes           no           yes       +rx                     1213
+09   1        yes           yes          no        +rx                     100
+10   5        yes           yes          yes       random (access denied)  279
