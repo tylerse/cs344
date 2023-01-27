@@ -1,151 +1,146 @@
+/* Author: Sean Tyler
+ * Date: 01/19/2023
+ * Class: CS344
+ * Assignment: BASE64
+ *
+ * base64enc: Encodes a file in base64, or provided no arguments or '-'
+ *            encodes from stdin
+ *
+ * Arguments: filepath
+ *
+ * Returns: base64 encoded text to stdout from file or stdin
+ */
+
 #include <stdio.h>
 #include <stdint.h>
-#include <stdlib.h>
-#include <math.h>
-#include <errno.h>
 #include <string.h>
+#include <errno.h>
+#include <err.h>
 
 #ifndef UINT8_MAX
-#error "uint8_max not defined."
-#endif // uint_8
+#error "uint8_max not defined"
+#endif
 
-static char const alphabet[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-                               "abcdefghijklmnopqrstuvwxyz"
-                               "0123456789+/=";
+// Define input/output sizes to handle each pass
+#define IN_SIZE   3
+#define OUT_SIZE  4
 
-enum {
-        IN_SIZE = 3,
-        OUT_SIZE = 4
-    };
+static char const alphabet[] =  "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+                                "abcdefghijklmnopqrstuvwxyz"
+                                "0123456789+/=";
+
+/*
+ * Function:    encode
+ * -------------------
+ * base64 encodes in[3] array into out[4] array
+ *
+ * example, with letters standing in for bits
+ * input bytes = abcdefgh ijklmnop qrstuvwx
+ * first byte -> 00abcdef
+ * second     -> 00ghijkl
+ * third      -> 00mnopqr
+ * fourth     -> 00stuvwx
+ *
+ * in[3]: three byte array to encode
+ * out[4]: four byte array to place encoded data
+ *
+ * returns: integer 0 upon success.
+ */
 
 int encode(uint8_t in[], uint8_t out[]){
 
-    // Decodes by bitshifting.  Refer to base64 specs for details.
-    // Takes array in, output array, and the len
-    out[0] =  in[0] >> 2;
-    out[1] =  ((in[0] & 0x03) << 4 | in[1] >> 4);
-    out[2] =  ((in[1] & 0x0f) << 2 | in[2] >> 6);
-    out[3] =  in[2] & 0x3f;
-    return(0);
+
+  // clear out var from previous cycle
+  //for(int i = 0; i < OUT_SIZE; i++) {
+     // out[i] = 0;
+  //}
+  out[0] = in[0] >> 2;
+  out[1] = (in[0] << 4 | in[1] >> 4) & 0x3F;
+  out[2] = (in[1] << 2 | in[2] >> 6) & 0x3F;
+  out[3] = in[2] & 0x3f;
+  return 0;
 }
 
 int main(int argc, char *argv[]){
 
-    FILE *input;
+  int len;
+  int eof_flag = 0;
+  int line_feed = 0;
+  uint8_t in[3];
+  uint8_t out[4];
 
-    int i;
-    int len;
-    uint8_t in[IN_SIZE];
-    uint8_t out[OUT_SIZE];
-    int line_feed = 0;
-    int empty_flag = 1;
+  FILE *input;
 
-    // Check for arguments
-    // If there isn't any, read from stdin
-    if(argc == 1)
-    {
-        input = stdin;
-        printf("Enter text to encode:\n");
-    }
+  // if no argument or first argument is '-', encode from stdin.
+  if(argc == 1 ) {
 
-    // If there is one assume it is a file to encode.
-    else if (argc == 2)
-    {
-        // Open the file, tell user success or error
-        printf("Opening file :%s...", argv[1]);
-        input = fopen(argv[1], "rb+");
-        if(input){
-            printf("success.\n");
+  // otherwise try opening and encoding from file at provided path.
+  } else if (argc == 2) {
+      if(strcmp("-", argv[1])){
+        input = fopen(argv[1], "r");
+
+        // test if file opened properly
+        if(!input){
+          err(errno, "fopen()");
+        }
+      }
+   } else {
+      err(errno=EINVAL, "Usage: %s [FILE]", argv[0]);
+  }
+
+  // loop through input IN_SIZE characters at a time until end of file/input
+  while(eof_flag == 0) {
+
+    // reset len var, then process IN_SIZE characters from input
+    len = 0;
+    for(int i = 0; i < IN_SIZE; i++){
+      char c = fgetc(input);
+      //check end of file, if not increment len var
+      if(c != EOF){
+        in[i] = c;
+        len++;
+      }
+      // else distinguish between error and eof.  if eof, set eof_flag to true
+      else {
+        if(ferror(input)){
+          err(1, NULL);
         } else {
-            fprintf(stderr, "Error: %s\n", strerror(errno));
-            exit(1);
+          eof_flag = 1;
         }
-    }
-    else
-    {
-        // Too many arguments, or something else wrong with number of args, print error.
-        fprintf(stderr, "%s",  "Invalid arguments: b64enc -filepath");
-        exit(1);
+      }
     }
 
-    do {
-        i = 0, len = 0;
-        for(int i = 0; i < IN_SIZE; i++)
-        {
-            in[i] = fgetc(input);
-            if(feof(input) != 0 || (input == stdin && in[i] == '\n'))
-            {
-                break;
-            }
-            else if (ferror(input) == 0){
-                len++;
-            }
-            else {
-                fprintf(stderr, "Error: %s\n", strerror(errno));
-            }
+    encode(in, out);
 
-        }
+    //if end of input, add appropriate padding to unused output elements
+    if(eof_flag == 1){
+      if(len < 3){
+        out[3] = 64;
+        out[2] &= 0x3C;
+      }
+      if(len < 2){
+        out[2] = 64;
+        out[1] &= 0x30;
+      }
+    }
 
-        if(len == 0)
-        {
-            if(input == stdin)
-            {
-                printf("\nProvide input:");
-            }
-            else
-            {
-                if(empty_flag)
-                {
-                    printf("Empty file: No input to encode.");
-                }
+    // print encoded output to stdout
+    for(int i = 0; i < OUT_SIZE; i++ ) {
+      printf("%c", alphabet[out[i]]);
 
-                break;
-            }
+      // check line length and add line feed if >= 76 chars
+      line_feed++;
+      if(line_feed >= 76){
+        printf("\n");
+        line_feed = 0;
+      }
+    }
+  }
 
-        }
-
-        else
-        {
-            empty_flag = 0;
-            if(len < 3)
-            {
-                for(int i = len; i < 3; i++){
-                    in[i] = 0;
-                }
-            }
-
-            if(encode(in, out) != 0)
-            {
-                fprintf(stderr, "Error: Could not decode file");
-            }
-            else
-            {
-
-                if(len < 3)
-                {
-                    int padding = ceil(4.0 * len / 3.0);
-                    for (i = padding; i < OUT_SIZE ; i++)
-                        {
-                          out[i] = '=';
-                        }
-                }
-
-                for(i = 0; i < 4; i++)
-                {
-                    if(line_feed >= 76)
-                    {
-                        printf("\n");
-                        line_feed = 0;
-                    }
-                    printf("%c", out[i] == '=' ? out[i] : alphabet[out[i]]);
-                    line_feed++;
-                }
-            }
-        }
-    } while(1);
-
-    return(0);
+  // add a line feed to end of output if one was not already added
+  if(line_feed != 0){
+    printf("\n");
+  }
+  fclose(input);
 }
-
-
 
